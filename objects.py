@@ -1,3 +1,5 @@
+import numpy as np
+
 class piece:
 	""" Simple class to reprensent pieces """
 	positionX = 0
@@ -5,74 +7,82 @@ class piece:
 	rotated = False
 	flipped = False
 
-	def __init__(self):
-		self.cases = [[0,0],[0,0],[0,0]]
+	def __init__(self,s):
+		self.squarres = np.zeros((s,2))
+		self.size = s
 
-	def fillCase(self,xylist):
+	def print(self):
+		print("This is a puzzle piece of size", self.size)
+		print("Rotation: ",self.rotated, ", flipped: ", self.flipped)
+		print("Position: x=",self.positionX,", y=",self.positionY)
+		print(self.squarres, "\n")
+
+	def fillSquare(self,xylist):
 		for xy in xylist:
-			self.cases[xy[1]][xy[0]]=1
+			x=xy[0]
+			y=xy[1]
+			self.squarres[y][x]=1
 
 	def flipPiece(self):
 
-		c = self.cases
-		sqarreMatrix = []
-		
-
-
+		print("Flipping piece")
+		self.squarres = np.rot90(self.squarres,2)
+		self.flipped = not self.flipped
+		#print(self.squarres)
 
 	def rotatePiece(self):
 
-		if self.rotated == False:
-			self.cases = [ [self.cases[1][0],self.cases[1][1],self.cases[2][1]] , [self.cases[0][0],self.cases[1][0],self.cases[2][0]] ]
-			self.rotated = True
-
-		elif self.rotated == True:
-			pass
-			self.rotated = False
-
-		else:
-			print("What did you do to you poor piece!?\nIt's not rotated it's broken!")
-
-
-	def getPositions(self):
-		positions = []
-		for y,row in enumerate(self.cases):
-			#print("y=",y)
-			for x,value in enumerate(row):
-				#print("x=",x)
-				if value == 1:
-					positions.append([x,y])
-
-		return positions
-
+		print("Rotating piece")
+		self.squarres = np.rot90(self.squarres,1)
+		self.rotated = not self.rotated
+		#print(self.squarres)
 
 
 class board:
 	""" Simple class to represent the boards """
 
-	def __init__(self):
-		self.cases = [[0,0,0],[0,0,0],[0,0,0]]
+	def __init__(self,s):
+		self.squarres = np.zeros((s,s))
+		self.size = s
 		self.numberOfPieces = 0
 
-	def placePiece(self, piece, xshift, yshift):
-		piece.positionX = xshift
-		piece.positionY = yshift
-		positions = piece.getPositions()
-		print(positions)
-		hypotheticalBoard = self.cases
+	def placePiece(self, piece, x, y):
 
-		for p in positions:
-			x = p[0]+xshift
-			y = p[1]+yshift
-			if x>2 or y>2:
-				print("You can't put your piece there")
-				return False
-			if(hypotheticalBoard[y][x]>0):
-				print("Case already occupied in ", x,y)
-				return False
-			else: 
-				hypotheticalBoard[y][x] +=1
+		# Sort out position
+		# if non flipped, x=0,1 and y=0
+		# if flipped x = 0 and y =0,1
+		if x>1 or y>1:
+			print("Error, x and y can't be >1")
+			return False
+		if piece.flipped and x>0:
+			print("Error, piece is flipped so x should be 0")
+			return False
+		elif not piece.flipped and y>0:
+			print("Error, piece is not flipped so y should be 0")
+			return False
 
-		self.cases = hypotheticalBoard
+		piece.positionX = x
+		piece.positionY = y
+
+		workMatrix = np.zeros((piece.size,piece.size))
+
+		if piece.flipped == False: 
+			if x == 0: workMatrix[:,:-1] = piece.squarres
+			elif x == 1: workMatrix[:,1:] = piece.squarres
+
+		else:  
+			if y == 0: 
+				workMatrix[:-1,:] = piece.squarres
+			elif y == 1: 
+				workMatrix[1:,:] = piece.squarres
+
+		test = self.squarres + workMatrix
+		for cell in np.nditer(test):
+			if cell>1:
+				return False
+
+		# Success!
+		self.squarres = test
 		self.numberOfPieces += 1
+
 		return True
